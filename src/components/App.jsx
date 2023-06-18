@@ -1,118 +1,115 @@
 import { SearchBar } from './Searchbar';
 import { ImageGallery } from './ImageGallery';
 import { Button } from './Button';
-import { Component } from 'react';
+import { useState } from 'react';
 import { Modal } from './Modal';
 import { Loader } from './Loader';
-import {getImagesApi} from '../services/getImageApi'
+import { getImagesApi } from '../services/getImageApi';
 import '../styles.css';
+import { useEffect } from 'react';
 
-export class App extends Component {
-  state = {
-    searchName: '',
-    foundArray: [],
-    loading: false,
-    error: null,
-    page: 1,
-    isEmpty: false,
-    isVisible: false,
-    showModal: false,
-    selectedImage: '',
-    totalHits: 0,
-  };
-  key = '35881269-5244fadfdfc6e51dbaa5f3ad4';
+export const App = () => {
+  const [searchName, setSearchName] = useState('');
+  const [foundArray, setFoundArray] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [isEmpty, setIsEmpty] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState('');
+  const [totalHits, setTotalHits] = useState(0);
 
   // створення нового масиву обєктів з потрібних властивостей з масиву обєктів Арі
-  filterFoundArray(array) {
+  const filterFoundArray = array => {
     return array.map(({ id, webformatURL, largeImageURL, tags }) => ({
       id,
       webformatURL,
       largeImageURL,
       tags,
     }));
-  }
-
+  };
   // зчитування пошукового запиту
-  changeSearch = dataSearch => {
-    this.setState({
-      searchName: dataSearch,
-      page: 1,
-      foundArray: [],
-      error: null,
-      isEmpty: false,
-      isVisible: false,
-    });
+  const changeSearch = dataSearch => {
+    setSearchName(dataSearch);
+    setPage(1);
+    setFoundArray([]);
+    setError(null);
+    setIsEmpty(false);
+    setIsVisible(false);
   };
 
-  // Перевірка стейту і новий запит
-  componentDidUpdate(_, prevState) {
-    const { searchName, page } = this.state;
-    if (prevState.searchName !== searchName || prevState.page !== page) {
-      this.getImages(searchName, page);
-    }
-  }
-  getImages = async (searchName, page) => {
+  const getImages = async (searchName, page) => {
     if (!searchName) {
       return;
     }
-    this.setState({ loading: true });
+    setLoading(true);
     try {
       const { hits, totalHits } = await getImagesApi(searchName, page);
       if (hits.length === 0) {
-        this.setState({ isEmpty: true });
+        setIsEmpty(true);
         return;
       }
-      this.setState(prevState => ({
-        foundArray: [...prevState.foundArray, ...this.filterFoundArray(hits)],
-        isVisible: true,
-        totalHits: totalHits,
-      }));
-      if (totalHits === this.state.foundArray.length) {
-        this.setState({ isVisible: false });
+
+      setFoundArray(prevFoundArray => [
+        ...prevFoundArray,
+        ...filterFoundArray(hits),
+      ]);
+      setIsVisible(true);
+      setTotalHits(totalHits);
+
+      if (totalHits === foundArray.length) {
+        setIsVisible(false);
       }
     } catch (error) {
-      this.setState({ error });
+      setError(error);
     } finally {
-      this.setState({ loading: false });
+      setLoading(false);
     }
   };
 
-  selectImage = image => {
-    this.setState({ selectedImage: image, showModal: true });
+  //   // Перевірка стейту і новий запит
+
+  useEffect(() => {
+    getImages(searchName, page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchName, page]);
+
+  const selectImage = image => {
+    setSelectedImage(image);
+    setShowModal(true);
   };
 
-  onLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const onLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  closeModal = () => {
-    this.setState({ showModal: false, selectImage:"" });
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedImage('');
   };
-
-  render() {
-    const { foundArray, loading, error, isEmpty, isVisible, totalHits,showModal,selectedImage } =
-      this.state;
-    const displayedPages = totalHits / foundArray.length;
-    return (
+  const displayedPages = totalHits / foundArray.length;
+     return (
       <div className="App">
         {showModal && <Modal
           selectedImage={selectedImage}
-          closeModal={this.closeModal}
+          closeModal={closeModal}
         />}
-        <SearchBar onSubmit={this.changeSearch} />
+        <SearchBar onSubmit={changeSearch} />
         {isEmpty && <h2> Sorry. There are no images...</h2>}
         {error && <h2>{error.message}</h2>}
         {loading && <Loader />}
 
         {foundArray.length > 0 && <ImageGallery
           foundArray={foundArray}
-          onSelectImage={this.selectImage}
+          onSelectImage={selectImage}
         />}
         {displayedPages > 1 && isVisible && (
-          <Button onLoadMore={this.onLoadMore} loading={loading} />
+          <Button onLoadMore={onLoadMore} loading={loading} />
         )}
       </div>
     );
-  }
-}
+};
+
+
 
