@@ -39,38 +39,39 @@ export const App = () => {
     setIsVisible(false);
   };
 
-  const getImages = async (searchName, page) => {
-    if (!searchName) {
-      return;
-    }
-    setLoading(true);
-    try {
-      const { hits, totalHits } = await getImagesApi(searchName, page);
-      if (hits.length === 0) {
-        setIsEmpty(true);
+  
+  //   // Перевірка стейту і новий запит
+ 
+  useEffect(() => {
+    const getImages = async (searchName, page) => {
+      if (!searchName) {
         return;
       }
+      setLoading(true);
+      try {
+        const { hits, totalHits } = await getImagesApi(searchName, page);
+        if (hits.length === 0) {
+          setIsEmpty(true);
+          return;
+        }
 
-      setFoundArray(prevFoundArray => [
-        ...prevFoundArray,
-        ...filterFoundArray(hits),
-      ]);
-      setIsVisible(true);
-      setTotalHits(totalHits);
+        setFoundArray(prevFoundArray => [
+          ...prevFoundArray,
+          ...filterFoundArray(hits),
+        ]);
+        setIsVisible(true);
+        setTotalHits(totalHits);
 
-      if (totalHits === foundArray.length) {
-        setIsVisible(false);
+        if (totalHits === foundArray.length) {
+          setIsVisible(false);
+        }
+      } catch (error) {
+        setError(error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  //   // Перевірка стейту і новий запит
-
-  useEffect(() => {
     getImages(searchName, page);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchName, page]);
@@ -113,3 +114,6 @@ export const App = () => {
 
 
 
+
+// розібратись з зациклюванням в useEffect при додаванні масиву
+// Використання додаткової змінної: Ви можете створити додаткову змінну, наприклад, foundArrayLength, і включити її у масив залежностей useEffect. Замість безпосереднього використання foundArray.length, ви будете оновлювати foundArrayLength за допомогою ефекту. Таким чином, ви можете уникнути зациклення.
